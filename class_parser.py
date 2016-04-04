@@ -1,17 +1,28 @@
 import re
-
+from globals import InheritanceType
 
 class Cls:
     def __init__(self, name, inherit):
-        self.name = name
+        self.name = name.replace(" ","")
         self.inherit = inherit
 
     def __str__(self):
         data = self.name + " " + " Inherit: "
         for cls in self.inherit:
-            data += cls + ","
-        return data[:-1]
+            data += str(cls[0]) + " " + cls[1] + ","
+        return repr(data[:-1])
 
+def parse_inheritance_type(cls):
+    type = None
+    if " " in cls:
+        tmp = cls.split(" ")
+        print(tmp)
+        type = InheritanceType.getTypeFromString(tmp[0])
+        cls = tmp[1]
+    else:
+        type = InheritanceType.public
+
+    return type,cls
 
 def __parse_class(cls):
     # print(cls)
@@ -23,12 +34,12 @@ def __parse_class(cls):
 
     if ":" in header:  # if the class is inheritinng from someone
         tmp = header.split(":")
-        name = tmp[0].replace(" ", "")
+        name = tmp[0]
         for cls in tmp[1].split(","):
-            inherit.append(cls.replace(" ", ""))
+            inherit.append(parse_inheritance_type(cls.strip()))
 
     else:
-        name = header.replace(" ", "")
+        name = header
 
     return Cls(name, inherit)
 

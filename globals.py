@@ -1,5 +1,6 @@
 import sys
 from enum import Enum
+from exceptions import BaseClsException
 
 class RetVal(Enum):
     EOK = 0
@@ -12,6 +13,26 @@ class RetVal(Enum):
 class Operation(Enum):
     CLASSIC = 0
     SHOW_CLASS = 1
+
+class InheritanceType(Enum):
+    public = 0
+    protected = 1
+    private = 2
+
+    @staticmethod
+    def getTypeFromString(string):
+
+        #empty == no modifier = public
+        if not string:
+            return "public"
+        if string == "public":
+            return InheritanceType.public
+        elif string == "protected":
+            return InheritanceType.protected
+        elif string == "private":
+            return InheritanceType.private
+        else:
+            raise BaseClsException("Unknown access modifier: " +string)
 
 
 def print_help():
