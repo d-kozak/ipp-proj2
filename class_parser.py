@@ -96,6 +96,9 @@ class Cls:
 
         return etree.tostring(root,pretty_print=True)
 
+    def show_details(self):
+        pass
+
 
 '''parse the type of inheritance, default is public'''
 

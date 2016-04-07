@@ -12,8 +12,8 @@ def print_basic_info(classes):
     for cls in get_no_parent_classes(classes):
         cls.to_xml_basic(root)
 
-    txt = etree.tostring(root,pretty_print=True)
-    print("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + str(txt))
+    txt = etree.tostring(root,pretty_print=True,xml_declaration = True, encoding='UTF-8')
+    print(txt)
 
 def create_class_tree(classes):
     for cls in classes:
@@ -29,12 +29,18 @@ def main():
     args = Args(sys.argv[1:])
 
     classes = parse_classes_from_file(args)
-
     create_class_tree(classes)
 
-    pprint.pprint(classes)
-
-    print_basic_info(classes)
+    if args.details:
+        #true means all
+        if args.details == True:
+            for cls in classes:
+                cls.show_details()
+        #otherwise it contains class name
+        else:
+            find_class_by_name(classes,args.details).show_details()
+    else:
+        print_basic_info(classes)
 
 if __name__ == "__main__":
     main()
