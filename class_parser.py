@@ -22,13 +22,15 @@ class Attr:
 
 
 class Cls:
+    CONCRETE_CLASS = "concrete"
+    ABSTRACT = "abstract"
     def __init__(self, name, inherit,is_defined):
         self.name = name.replace(" ", "")
         self.inherit = inherit
         self.is_defined = is_defined
         self.attrs = []
         self.methods = []
-        self.kind = "concrete"
+        self.kind = Cls.CONCRETE_CLASS
 
         self.parents = []
         self.children = []
@@ -85,10 +87,13 @@ class Cls:
 
     def to_xml_basic(self, root):
         elem = etree.Element("class")
-        elem.text = self.name
         elem.attrib["name"] = self.name
         elem.attrib["kind"] = self.kind
         root.append(elem)
+
+        for child in self.children:
+            e = child.to_xml_basic(elem)
+
         return etree.tostring(root,pretty_print=True)
 
 
@@ -220,6 +225,11 @@ def __parse_class(data):
     else:
         __parse_methods_and_attributes(cls, class_body[0])
 
+    for m in cls.methods:
+        if m.is_pure_virtual:
+            cls.kind = Cls.ABSTRACT
+            break
+
     return cls
 
 
@@ -241,4 +251,18 @@ def parse_classes_from_file(args):
             cls = [x for x in ret_val if x.name == new_class.name][0]
             cls.actualize(new_class)
 
+    return ret_val
+
+
+def find_class_by_name(classes,name):
+    for cls in classes:
+        if cls.name == name:
+            return cls
+    raise BaseClsException("Parent class not found")
+
+def get_no_parent_classes(classes):
+    ret_val = []
+    for cls in classes:
+        if not cls.parents:
+            ret_val.append(cls)
     return ret_val

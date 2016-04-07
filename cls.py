@@ -3,24 +3,17 @@ import pprint
 
 
 from args_parser import Args
-from class_parser import parse_classes_from_file
-from exceptions import BaseClsException
+from class_parser import parse_classes_from_file,find_class_by_name,get_no_parent_classes
 
 from lxml import etree
 
-def find_class_by_name(classes,name):
-    for cls in classes:
-        if cls.name == name:
-            return cls
-    raise BaseClsException("Parent class not found")
-
 def print_basic_info(classes):
     root = etree.Element("model")
-    for cls in classes:
+    for cls in get_no_parent_classes(classes):
         cls.to_xml_basic(root)
 
     txt = etree.tostring(root,pretty_print=True)
-    print(txt)
+    print("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + str(txt))
 
 def create_class_tree(classes):
     for cls in classes:
@@ -37,11 +30,11 @@ def main():
 
     classes = parse_classes_from_file(args)
 
-    classes = create_class_tree(classes)
+    create_class_tree(classes)
 
     pprint.pprint(classes)
 
-    #print_basic_info(classes)
+    print_basic_info(classes)
 
 if __name__ == "__main__":
     main()
