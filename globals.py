@@ -34,6 +34,11 @@ class InheritanceType(Enum):
         else:
             raise BaseClsException("Unknown access modifier: " +string)
 
+    @staticmethod
+    def getTupleOfTypes():
+        return [(InheritanceType.public,"public:"),(InheritanceType.protected,"protected:"),(InheritanceType.private,"private:")]
+
+
 
 def print_help():
     print("Help me, please")
