@@ -85,19 +85,36 @@ class Cls:
         else:
             raise BaseClsException("Redefininiton of class " + self.name)
 
-    def to_xml_basic(self, root):
+
+    def __prepare_class_header(self):
         elem = etree.Element("class")
         elem.attrib["name"] = self.name
         elem.attrib["kind"] = self.kind
+        return elem
+
+    def to_xml_basic(self, root):
+        elem = self.__prepare_class_header()
         root.append(elem)
 
         for child in self.children:
-            e = child.to_xml_basic(elem)
+            child.to_xml_basic(elem)
 
         return etree.tostring(root,pretty_print=True)
 
     def show_details(self):
-        pass
+        elem = self.__prepare_class_header()
+        if self.inherit:
+            inherit_elem = etree.Element("inheritance")
+            for cls in self.inherit:
+                cls_elem = etree.Element("from")
+                cls_elem.attrib["name"] = cls[1]
+                cls_elem.attrib["privacy"] = InheritanceType.getStringForType(cls[0])
+                inherit_elem.append(cls_elem)
+
+        txt = etree.tostring(elem, pretty_print=True, xml_declaration=True, encoding='UTF-8')
+        print(txt)
+
+
 
 
 '''parse the type of inheritance, default is public'''

@@ -10,7 +10,7 @@ class Args:
         self.__process_args(arguments)
 
     def __process_args(self, arguments):
-        long_opts = ["help", "input=", "output=", "pretty-xml=", "details", "search=", "conflicts"]
+        long_opts = ["help", "input=", "output=", "pretty-xml=", "details=", "search=", "conflicts"]
 
         try:
             optlist, args = getopt.getopt(arguments, [], long_opts)
