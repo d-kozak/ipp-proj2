@@ -1,6 +1,9 @@
 import re
-from globals import InheritanceType
 from lxml import etree
+
+from globals import InheritanceType
+from exceptions import BaseClsException
+
 
 
 class Method:
@@ -19,19 +22,49 @@ class Attr:
 
 
 class Cls:
-    def __init__(self, name, inherit):
+    def __init__(self, name, inherit,is_defined):
         self.name = name.replace(" ", "")
         self.inherit = inherit
-        self.is_defined = False
+        self.is_defined = is_defined
         self.attrs = []
         self.methods = []
         self.kind = "concrete"
 
-    def __str__(self):
-        data = self.name + " " + " Inherit: "
-        for cls in self.inherit:
-            data += str(cls[0]) + " " + cls[1] + ","
-        return repr(data[:-1])
+        self.parents = []
+        self.children = []
+
+    def add_parent(self,p):
+        self.parents.append(p)
+
+    def add_child(self, c):
+        self.children.append(c)
+
+    def __repr__(self):
+        data = self.name + "\n"
+
+        if self.inherit:
+            data += "\tInherit:\n"
+            for cls in self.inherit:
+                data += "\t\t"  + str(cls[0]) + " " + cls[1] + "\n"
+
+        if self.is_defined:
+            data += "\tAttrs:\n"
+
+            for a in self.attrs:
+                data += "\t\t" + a.type + " " + a.name + "\n"
+
+            data += "\tMethods:\n"
+            for a in self.methods:
+                data += "\t\t" + a.type + " " + a.name + " "
+                if a.params:
+                    data += "Params: \n"
+                    for p in a.params:
+                        data += "\t\t" + p.type + " " + p.name + "\n"
+        else:
+            data += " \t -->is just DECLARED<--"
+
+        return data
+
 
     def add_method(self,m):
         self.methods.append(m)
@@ -48,7 +81,7 @@ class Cls:
             self.is_defined = True
 
         else:
-            raise BaseException("Redefininiton of class " + self.name)
+            raise BaseClsException("Redefininiton of class " + self.name)
 
     def to_xml_basic(self, root):
         elem = etree.Element("class")
@@ -83,6 +116,11 @@ def __parse_inheritance(cls):
     name = None
     inherit = []
 
+    if re.match(r"class(.+){\w*};",cls,re.DOTALL):
+        is_defined = False
+    else:
+        is_defined = True
+
     if ":" in header:  # if the class is inheritinng from someone
         tmp = header.split(":")
         name = tmp[0]
@@ -92,7 +130,7 @@ def __parse_inheritance(cls):
     else:
         name = header
 
-    return Cls(name, inherit)
+    return Cls(name, inherit,is_defined)
 
 
 def __check_visibility_type(line, inheritance_type):
@@ -118,7 +156,7 @@ def __parse_method(cls, line):
         if method.is_virtual:
             method.is_pure_virtual = True
         else:
-            raise BaseException("Only virtual methods can be specified as pure virtual")
+            raise BaseClsException("Only virtual methods can be specified as pure virtual")
 
     if "static" in line:
         line = line.replace("static", "")
@@ -126,8 +164,8 @@ def __parse_method(cls, line):
 
     type, name, params = re.findall(r"(.*) (.*)\((.*)\).*", line, re.DOTALL)[0]
 
-    method.type = type
-    method.name = name
+    method.type = type.strip()
+    method.name = name.strip()
 
     param_list = []
     if params != "void" and params:
@@ -137,18 +175,16 @@ def __parse_method(cls, line):
                 param_list.append((ret_type, name))
 
     method.params = param_list
-    return method
+    cls.add_method(method)
 
-def __parse_attr(cls, line):
+def __parse_attr(cls,line):
     if line:
         type,name = line.rsplit(" ",1)
 
         type = type.strip()
         name = name.strip()
 
-        a = Attr(type,name)
-        cls.add_attr(a)
-
+        cls.add_attr(Attr(type, name))
 
 def __is_method(line):
     return re.match(".*\(.*\).*", line, re.DOTALL)
@@ -162,7 +198,7 @@ def __parse_methods_and_attributes(cls, class_body):
             line, inheritance_type = __check_visibility_type(line, inheritance_type)
             line = line.replace("\n", "")
             if __is_method(line):
-                cls.add_method(__parse_method(cls, line))
+                __parse_method(cls, line)
             else:
                 __parse_attr(cls, line)
 
