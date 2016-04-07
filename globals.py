@@ -20,6 +20,10 @@ class InheritanceType(Enum):
     private = 2
 
     @staticmethod
+    def getTypes():
+        return [InheritanceType.private,InheritanceType.protected,InheritanceType.public]
+
+    @staticmethod
     def getTypeFromString(string):
 
         #empty == no modifier = public
@@ -48,12 +52,6 @@ class InheritanceType(Enum):
     @staticmethod
     def getTupleOfTypes():
         return [(InheritanceType.public,"public:"),(InheritanceType.protected,"protected:"),(InheritanceType.private,"private:")]
-
-
-
-def print_help():
-    print("Help me, please")
-    sys.exit(1)
 
 
 def error(msg, ret_val):

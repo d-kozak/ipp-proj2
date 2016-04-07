@@ -1,9 +1,9 @@
 import re
+import sys
 from lxml import etree
 
 from globals import InheritanceType
 from exceptions import BaseClsException
-
 
 
 class Method:
@@ -15,27 +15,30 @@ class Method:
         self.name = None
         self.params = None
 
+
 class Attr:
-    def __init__(self,type,name):
+    def __init__(self, type, name, is_static):
         self.type = type
         self.name = name
+        self.is_static = is_static
 
 
 class Cls:
     CONCRETE_CLASS = "concrete"
     ABSTRACT = "abstract"
-    def __init__(self, name, inherit,is_defined):
+
+    def __init__(self, name, inherit, is_defined):
         self.name = name.replace(" ", "")
         self.inherit = inherit
         self.is_defined = is_defined
-        self.attrs = []
-        self.methods = []
+        self.attributes = {InheritanceType.public: [], InheritanceType.protected: [], InheritanceType.private: []}
+        self.methods = {InheritanceType.public: [], InheritanceType.protected: [], InheritanceType.private: []}
         self.kind = Cls.CONCRETE_CLASS
 
         self.parents = []
         self.children = []
 
-    def add_parent(self,p):
+    def add_parent(self, p):
         self.parents.append(p)
 
     def add_child(self, c):
@@ -47,44 +50,44 @@ class Cls:
         if self.inherit:
             data += "\tInherit:\n"
             for cls in self.inherit:
-                data += "\t\t"  + str(cls[0]) + " " + cls[1] + "\n"
+                data += "\t\t" + str(cls[0]) + " " + cls[1] + "\n"
 
         if self.is_defined:
             data += "\tAttrs:\n"
 
-            for a in self.attrs:
-                data += "\t\t" + a.type + " " + a.name + "\n"
+            for x in self.attributes.values():
+                for a in x:
+                    data += "\t\t" + a.type + " " + a.name + "\n"
 
             data += "\tMethods:\n"
-            for a in self.methods:
-                data += "\t\t" + a.type + " " + a.name + " "
-                if a.params:
-                    data += "Params: \n"
-                    for p in a.params:
-                        data += "\t\t" + p.type + " " + p.name + "\n"
+            for x in self.methods.values():
+                for a in x:
+                    data += "\t\t" + a.type + " " + a.name + " "
+                    if a.params:
+                        data += "Params: \n"
+                        for p in a.params:
+                            data += "\t\t" + p.type + " " + p.name + "\n"
         else:
             data += " \t -->is just DECLARED<--"
 
         return data
 
+    def add_method(self, m, access_modifier):
+        self.methods[access_modifier].append(m)
 
-    def add_method(self,m):
-        self.methods.append(m)
-
-    def add_attr(self,a):
-        self.attrs.append(a)
+    def add_attr(self, a, access_modifier):
+        self.attributes[access_modifier].append(a)
 
     '''check wheter class was defined, if not, define it using cls other'''
 
     def actualize(self, other):
         if not self.is_defined:
-            self.attrs = other.get_attributes()
+            self.attributes = other.get_attributes()
             self.methods = other.get_methods()
             self.is_defined = True
 
         else:
             raise BaseClsException("Redefininiton of class " + self.name)
-
 
     def __prepare_class_header(self):
         elem = etree.Element("class")
@@ -99,7 +102,7 @@ class Cls:
         for child in self.children:
             child.to_xml_basic(elem)
 
-        return etree.tostring(root,pretty_print=True)
+        return etree.tostring(root, pretty_print=True)
 
     def show_details(self):
         elem = self.__prepare_class_header()
@@ -111,10 +114,27 @@ class Cls:
                 cls_elem.attrib["privacy"] = InheritanceType.getStringForType(cls[0])
                 inherit_elem.append(cls_elem)
 
+        if self.is_defined:
+
+            for type,str_repr in ((x, InheritanceType.getStringForType(x)) for x in InheritanceType.getTypes()):
+
+                inner_elem = etree.Element(str_repr)
+                elem.append(inner_elem)
+
+                for i in (self.attributes, "attributes"), (self.methods, "methods"):
+
+                    if i[0][type]:
+                        tmp = etree.Element(i[1])
+                        inner_elem.append(tmp)
+                        for attr in i[0][type]:
+                            a = etree.Element(i[1][:-1])
+                            a.attrib["name"] = attr.name
+                            a.attrib["type"] = attr.type
+                            a.attrib["scope"] = "class" if attr.is_static else "instance"
+                            tmp.append(a)
+
         txt = etree.tostring(elem, pretty_print=True, xml_declaration=True, encoding='UTF-8')
         print(txt)
-
-
 
 
 '''parse the type of inheritance, default is public'''
@@ -141,7 +161,7 @@ def __parse_inheritance(cls):
     name = None
     inherit = []
 
-    if re.match(r"class(.+){\w*};",cls,re.DOTALL):
+    if re.match(r"class(.+){\w*};", cls, re.DOTALL):
         is_defined = False
     else:
         is_defined = True
@@ -155,7 +175,7 @@ def __parse_inheritance(cls):
     else:
         name = header
 
-    return Cls(name, inherit,is_defined)
+    return Cls(name, inherit, is_defined)
 
 
 def __check_visibility_type(line, inheritance_type):
@@ -170,7 +190,7 @@ def __check_visibility_type(line, inheritance_type):
 '''parse all methods and attributes from class data'''
 
 
-def __parse_method(cls, line):
+def __parse_method(cls, line, inheritance_type):
     method = Method()
     if "virtual" in line:
         line = line.replace("virtual", "")
@@ -196,20 +216,28 @@ def __parse_method(cls, line):
     if params != "void" and params:
         for param in params.split(","):
             if param:
-                ret_type, name = param.rsplit(" ",1)
+                ret_type, name = param.rsplit(" ", 1)
                 param_list.append((ret_type, name))
 
     method.params = param_list
-    cls.add_method(method)
+    cls.add_method(method, inheritance_type)
 
-def __parse_attr(cls,line):
+
+def __parse_attr(cls, line, inheritance_type):
     if line:
-        type,name = line.rsplit(" ",1)
+        type, name = line.rsplit(" ", 1)
+
+        if "static " in type:
+            type = type.replace("static ","")
+            is_static = True
+        else:
+            is_static = False
 
         type = type.strip()
         name = name.strip()
 
-        cls.add_attr(Attr(type, name))
+        cls.add_attr(Attr(type, name,is_static), inheritance_type)
+
 
 def __is_method(line):
     return re.match(".*\(.*\).*", line, re.DOTALL)
@@ -223,9 +251,9 @@ def __parse_methods_and_attributes(cls, class_body):
             line, inheritance_type = __check_visibility_type(line, inheritance_type)
             line = line.replace("\n", "")
             if __is_method(line):
-                __parse_method(cls, line)
+                __parse_method(cls, line, inheritance_type)
             else:
-                __parse_attr(cls, line)
+                __parse_attr(cls, line, inheritance_type)
 
 
 '''parse one class from file,includes parsing inheritance,methods and parameters'''
@@ -239,16 +267,17 @@ def __parse_class(data):
 
     if not class_body:
         # if it was just a declaration
-        cls.attrs = None
+        cls.attributes = None
         cls.methods = None
         return cls
     else:
         __parse_methods_and_attributes(cls, class_body[0])
 
-    for m in cls.methods:
-        if m.is_pure_virtual:
-            cls.kind = Cls.ABSTRACT
-            break
+    for i in cls.methods.values():
+        for m in i:
+            if m.is_pure_virtual:
+                cls.kind = Cls.ABSTRACT
+                break
 
     return cls
 
@@ -274,11 +303,12 @@ def parse_classes_from_file(args):
     return ret_val
 
 
-def find_class_by_name(classes,name):
+def find_class_by_name(classes, name):
     for cls in classes:
         if cls.name == name:
             return cls
-    raise BaseClsException("Parent class not found")
+    raise BaseClsException("Parent class of " + name + " not found")
+
 
 def get_no_parent_classes(classes):
     ret_val = []

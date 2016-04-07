@@ -1,5 +1,6 @@
 import sys
-import pprint
+from exceptions import BaseClsException
+from pprint import pprint
 
 
 from args_parser import Args
@@ -20,8 +21,8 @@ def create_class_tree(classes):
         for i in cls.inherit:
             parent_class = find_class_by_name(classes,i[1])
 
-            parent_class.add_child(cls)
-            cls.add_parent(parent_class)
+            parent_class.add_child((i[0],cls))
+            cls.add_parent((i[0],parent_class))
 
     return  classes
 
@@ -31,14 +32,21 @@ def main():
     classes = parse_classes_from_file(args)
     create_class_tree(classes)
 
-    if args.details:
+    pprint(classes)
+
+    if args.details != Args.NOT_SPECIFIED:
         #true means all
-        if args.details == True:
+        if args.details == Args.ALL:
             for cls in classes:
                 cls.show_details()
         #otherwise it contains class name
         else:
-            find_class_by_name(classes,args.details).show_details()
+            try:
+                find_class_by_name(classes,args.details).show_details()
+            except BaseClsException:
+                # if the class does not exists, print just the header
+                args.getOutput().write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
+
     else:
         print_basic_info(classes)
 
