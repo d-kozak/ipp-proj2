@@ -17,6 +17,8 @@ class Method:
         self.name = None
         self.params = None
 
+        self.inherit_from = None
+
 
 class Attr:
     def __init__(self, type, name, is_static):
@@ -24,6 +26,7 @@ class Attr:
         self.name = name
         self.is_static = is_static
 
+        self.inherit_from = None
 
 class Cls:
     CONCRETE_CLASS = "concrete"
@@ -138,6 +141,8 @@ class Cls:
                             a.attrib["name"] = attr.name
                             a.attrib["type"] = attr.type
                             a.attrib["scope"] = "class" if attr.is_static else "instance"
+                            if attr.inherit_from:
+                                a.append(etree.Element("from",{"name":attr.inherit_from}))
                             if i[1] == "methods":
                                 if attr.is_virtual:
                                     virtual_elem = etree.Element("virtual",{"pure":"yes" if attr.is_pure_virtual else "no"})
@@ -161,6 +166,10 @@ class Cls:
 
             public_attrs = self.attributes[InheritanceType.public]
             protected_attrs = self.attributes[InheritanceType.protected]
+
+            for x in public_methods + protected_methods + private_pure_virtual_methods + public_attrs + protected_attrs:
+                if not x.inherit_from:
+                    x.inherit_from = self.name
 
             for child in self.children:
                 if child[0] == InheritanceType.private:
