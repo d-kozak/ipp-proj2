@@ -1,5 +1,7 @@
 import re
 import sys
+import xml.dom.minidom as minidom
+
 from lxml import etree
 
 from globals import InheritanceType
@@ -99,12 +101,12 @@ class Cls:
         elem = self.__prepare_class_header()
         root.append(elem)
 
-        for child in self.children:
+        for child in (x[1] for x in self.children):
             child.to_xml_basic(elem)
 
         return etree.tostring(root, pretty_print=True)
 
-    def show_details(self):
+    def show_details(self,root = None):
         elem = self.__prepare_class_header()
         if self.inherit:
             inherit_elem = etree.Element("inheritance")
@@ -140,8 +142,10 @@ class Cls:
 
         # attrs, methods = self.get_inherited_members()
 
-        txt = etree.tostring(elem, pretty_print=True, xml_declaration=True, encoding='UTF-8')
-        print(txt)
+        if root == None:
+            return etree.tostring(elem, xml_declaration=True, encoding='UTF-8')
+        else:
+            root.append(elem)
 
     '''send attributes and methods to children (visibility according to the inheritance type)'''
 
@@ -390,3 +394,7 @@ def get_no_parent_classes(classes):
         if not cls.parents:
             ret_val.append(cls)
     return ret_val
+
+
+def pretty_print_xml(string):
+    print(minidom.parseString(string).toprettyxml())

@@ -4,7 +4,7 @@ from pprint import pprint
 
 
 from args_parser import Args
-from class_parser import parse_classes_from_file,find_class_by_name,get_no_parent_classes
+from class_parser import parse_classes_from_file,find_class_by_name,get_no_parent_classes,pretty_print_xml
 
 from lxml import etree
 
@@ -13,8 +13,9 @@ def print_basic_info(classes):
     for cls in get_no_parent_classes(classes):
         cls.to_xml_basic(root)
 
-    txt = etree.tostring(root,pretty_print=True,xml_declaration = True, encoding='UTF-8')
-    print(txt)
+    pretty_print_xml(etree.tostring(root,xml_declaration = True, encoding='UTF-8'))
+
+
 
 def create_class_tree(classes):
     for cls in classes:
@@ -39,13 +40,15 @@ def main():
 
     if args.details != Args.NOT_SPECIFIED:
         #true means all
+        root = etree.Element("model")
         if args.details == Args.ALL:
             for cls in classes:
-                cls.show_details()
+                cls.show_details(root)
+            pretty_print_xml(etree.tostring(root,xml_declaration=True,encoding="UTF-8"))
         #otherwise it contains class name
         else:
             try:
-                find_class_by_name(classes,args.details).show_details()
+                pretty_print_xml(find_class_by_name(classes,args.details).show_details())
             except BaseClsException:
                 # if the class does not exists, print just the header
                 args.getOutput().write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
