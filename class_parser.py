@@ -104,7 +104,7 @@ class Cls:
         for child in (x[1] for x in self.children):
             child.to_xml_basic(elem)
 
-        return etree.tostring(root, pretty_print=True)
+        return prepare_xml_from_elem_tree(root)
 
     def show_details(self,root = None):
         elem = self.__prepare_class_header()
@@ -143,7 +143,7 @@ class Cls:
         # attrs, methods = self.get_inherited_members()
 
         if root == None:
-            return etree.tostring(elem, xml_declaration=True, encoding='UTF-8')
+            return prepare_xml_from_elem_tree(elem,True)
         else:
             root.append(elem)
 
@@ -395,6 +395,19 @@ def get_no_parent_classes(classes):
             ret_val.append(cls)
     return ret_val
 
+def __make_classs_tag_openclose(string):
+    string = string.group(0)
+    indent = string.index("<class")
+    return string.replace("/>",">") + "\n" + indent * "\t" + "</class>"
 
 def pretty_print_xml(string):
-    print(minidom.parseString(string).toprettyxml())
+    data = minidom.parseString(string).toprettyxml()
+    tmp = re.sub(".*<class(.+?)/>", lambda  m: __make_classs_tag_openclose(m), data)
+    print(tmp)
+
+def prepare_xml_from_elem_tree(root_elem,return_string=False):
+    data = etree.tostring(root_elem, xml_declaration=True, encoding="UTF-8")
+    if return_string:
+        return  data
+    else:
+        pretty_print_xml(data)
