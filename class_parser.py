@@ -150,7 +150,15 @@ class Cls:
                                 if attr.is_virtual:
                                     virtual_elem = etree.Element("virtual",{"pure":"yes" if attr.is_pure_virtual else "no"})
                                     a.append(virtual_elem)
-                            tmp.append(a)
+
+                                arguments = etree.Element("arguments")
+                                if attr.params:
+                                    for param in attr.params:
+                                        param_element = etree.Element("argument", {"name": param[1], "type": param[0]})
+                                        arguments.append(param_element)
+                                a.append(arguments)
+
+                                tmp.append(a)
 
                 if not_empty:
                     elem.append(inner_elem)
@@ -190,52 +198,13 @@ class Cls:
                     child[1].methods[InheritanceType.public] += public_methods
                     child[1].methods[InheritanceType.protected] += protected_methods
                 else:
-                    raise BaseClsException("Unknow inheritance type")
+                    raise BaseClsException("Unknown inheritance type")
 
                 #now add the pure virtual methods
                 child[1].methods[InheritanceType.private] += private_pure_virtual_methods
         if self.children:
             for child in [x[1] for x  in self.children]:
                 child.send_members_to_children()
-
-    '''TODO: delete this'''
-    def get_inherited_members(self):
-        attrs = []
-        methods = []
-
-        if self.parents:
-            for i in self.parents:
-                if i[1].is_defined:
-                    attrs_public = i[1].attributes[InheritanceType.public]
-                    attrs_protected = i[1].attributes[InheritanceType.protected]
-
-                    methods_public = i[1].methods[InheritanceType.public]
-                    methods_protected = i[1].methods[InheritanceType.protected]
-
-                    if i[0] == InheritanceType.private:
-                        for x in attrs_public + attrs_protected + methods_public + methods_protected:
-                            x.visibility = InheritanceType.private
-                    elif i[0] == InheritanceType.protected:
-                        for x in attrs_public + attrs_protected + methods_public + methods_protected:
-                            x.visibility = InheritanceType.protected
-                    else:
-                        for x in attrs_public + methods_public:
-                            x.visibility = InheritanceType.public
-                        for x in attrs_protected + methods_protected:
-                            x.visibility = InheritanceType.protected
-
-                    for x in attrs_public + attrs_protected + methods_public + methods_protected:
-                        x.parent_cls = i[1]
-
-                    attrs += attrs_protected + attrs_public
-                    methods += methods_protected + methods_public
-
-                    x, y = i[1].get_inherited_members()
-
-                    attrs += x
-                    methods += y
-
-        return attrs, methods
 
     def __contains_pure_virtual_methods(self):
         if self.methods:
@@ -376,9 +345,6 @@ def __parse_class(data):
     class_body = re.findall("{(.+)}", data, re.DOTALL)
 
     if not class_body:
-        # if it was just a declaration
-        cls.attributes = None
-        cls.methods = None
         return cls
     else:
         __parse_methods_and_attributes(cls, class_body[0])
@@ -429,6 +395,10 @@ def __make_classs_tag_openclose(string):
 def pretty_print_xml(string):
     data = minidom.parseString(string).toprettyxml()
     tmp = re.sub(".*<class(.+?)/>", lambda  m: __make_classs_tag_openclose(m), data)
+
+    #now make arguments tag open close
+    tmp = re.sub("<arguments/>","<arguments></arguments>",tmp)
+
     print(tmp)
 
 def prepare_xml_from_elem_tree(root_elem,return_string=False):
