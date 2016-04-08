@@ -107,6 +107,10 @@ class Cls:
         return prepare_xml_from_elem_tree(root)
 
     def show_details(self,root = None):
+        if self.__contains_pure_virtual_methods():
+            self.kind = Cls.ABSTRACT
+
+
         elem = self.__prepare_class_header()
         if self.inherit:
             inherit_elem = etree.Element("inheritance")
@@ -153,6 +157,7 @@ class Cls:
         if self.children and self.is_defined:
             public_methods = self.methods[InheritanceType.public]
             protected_methods = self.methods[InheritanceType.protected]
+            private_pure_virtual_methods = [x for x in self.methods[InheritanceType.private] if x.is_pure_virtual]
 
             public_attrs = self.attributes[InheritanceType.public]
             protected_attrs = self.attributes[InheritanceType.protected]
@@ -171,6 +176,9 @@ class Cls:
                     child[1].methods[InheritanceType.protected] += protected_methods
                 else:
                     raise BaseClsException("Unknow inheritance type")
+
+                #now add the pure virtual methods
+                child[1].methods[InheritanceType.private] += private_pure_virtual_methods
         if self.children:
             for child in [x[1] for x  in self.children]:
                 child.send_members_to_children()
@@ -213,6 +221,15 @@ class Cls:
                     methods += y
 
         return attrs, methods
+
+    def __contains_pure_virtual_methods(self):
+        if self.methods:
+            for i in self.methods.values():
+                for m in i:
+                    if m.is_pure_virtual:
+                        return True
+        else:
+            return False
 
 
 '''parse the type of inheritance, default is public'''
@@ -350,12 +367,6 @@ def __parse_class(data):
         return cls
     else:
         __parse_methods_and_attributes(cls, class_body[0])
-
-    for i in cls.methods.values():
-        for m in i:
-            if m.is_pure_virtual:
-                cls.kind = Cls.ABSTRACT
-                break
 
     return cls
 

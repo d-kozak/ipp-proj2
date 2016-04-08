@@ -21,7 +21,7 @@ class InheritanceType(Enum):
 
     @staticmethod
     def getTypes():
-        return [InheritanceType.private,InheritanceType.protected,InheritanceType.public]
+        return [InheritanceType.public,InheritanceType.protected,InheritanceType.private]
 
     @staticmethod
     def getTypeFromString(string):

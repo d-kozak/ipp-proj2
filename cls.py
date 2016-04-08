@@ -36,7 +36,7 @@ def main():
     classes = parse_classes_from_file(args)
     create_class_tree(classes)
 
-    pprint(classes)
+    #pprint(classes)
 
     if args.details != Args.NOT_SPECIFIED:
         #true means all
