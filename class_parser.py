@@ -113,6 +113,7 @@ class Cls:
                 cls_elem.attrib["name"] = cls[1]
                 cls_elem.attrib["privacy"] = InheritanceType.getStringForType(cls[0])
                 inherit_elem.append(cls_elem)
+            elem.append(inherit_elem)
 
         if self.is_defined:
 
@@ -133,8 +134,50 @@ class Cls:
                             a.attrib["scope"] = "class" if attr.is_static else "instance"
                             tmp.append(a)
 
+            attrs,methods = self.get_inherited_members()
+
         txt = etree.tostring(elem, pretty_print=True, xml_declaration=True, encoding='UTF-8')
         print(txt)
+
+    def get_inherited_members(self):
+        attrs = []
+        methods = []
+
+        if self.parents:
+            for i in self.parents:
+                if i[1].is_defined:
+                    attrs_public = i[1].attributes[InheritanceType.public]
+                    attrs_protected = i[1].attributes[InheritanceType.protected]
+
+                    methods_public = i[1].methods[InheritanceType.public]
+                    methods_protected = i[1].methods[InheritanceType.protected]
+
+                    if i[0] == InheritanceType.private:
+                        for x in attrs_public + attrs_protected + methods_public + methods_protected:
+                            x.visibility = InheritanceType.private
+                    elif i[0] == InheritanceType.protected:
+                        for x in attrs_public + attrs_protected + methods_public + methods_protected:
+                            x.visibility = InheritanceType.protected
+                    else:
+                        for x in attrs_public + methods_public:
+                            x.visibility = InheritanceType.public
+                        for x in attrs_protected + methods_protected:
+                            x.visibility = InheritanceType.protected
+
+                    for x in attrs_public + attrs_protected + methods_public + methods_protected:
+                        x.parent_cls = i[1]
+
+                    attrs += attrs_protected + attrs_public
+                    methods += methods_protected + methods_public
+
+                    x, y = i[1].get_inherited_members()
+
+                    attrs += x
+                    methods += y
+
+        return attrs,methods
+
+
 
 
 '''parse the type of inheritance, default is public'''
@@ -147,7 +190,7 @@ def parse_inheritance_type(cls):
         inherit_type = InheritanceType.getTypeFromString(tmp[0])
         cls = tmp[1]
     else:
-        inherit_type = InheritanceType.public
+        inherit_type = InheritanceType.private
 
     return inherit_type, cls
 
