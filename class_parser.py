@@ -21,10 +21,13 @@ class Method:
 
 
 class Attr:
-    def __init__(self, type, name, is_static):
+    def __init__(self, name, is_static=None,type=None,inheritance_class_id=None):
         self.type = type
         self.name = name
         self.is_static = is_static
+
+		# class specified in "using" statement
+        self.inheritance_class_id = inheritance_class_id
 
         self.inherit_from = None
 
@@ -158,7 +161,7 @@ class Cls:
                                         arguments.append(param_element)
                                 a.append(arguments)
 
-                                tmp.append(a)
+                            tmp.append(a)
 
                 if not_empty:
                     elem.append(inner_elem)
@@ -214,6 +217,52 @@ class Cls:
                         return True
         else:
             return False
+
+    def solve_all_using_statements(self):
+        for x in self.attributes.values():
+            for y in x:
+                if y.inheritance_class_id:
+                    self.__solve_using_statement(y)
+
+    def get_parent_class(self, name):
+        for x in [x[1] for x in self.parents]:
+            if x.name == name:
+                return x
+            for y in [z[1] for z in x.parents]:
+                ret = y.get_parent_class(name)
+                if ret:
+                    return ret
+        return None
+
+    def __solve_using_statement(self, attribute):
+        cls = self.get_parent_class(attribute.inheritance_class_id)
+        if not cls:
+            raise BaseClsException("Given parent class " + attribute.inheritance_class_id + " was not found")
+
+        parent_attr,access_modifier = cls.get_attribute(attribute.name)
+
+        # remove the old reference from list, default location is private
+        self.attributes[InheritanceType.private] = list(filter(lambda x: attribute.name != x.name ,self.attributes[InheritanceType.private]))
+
+        # now copy all useful info into subclass parameter
+        attribute.type = parent_attr.type
+        attribute.is_static = parent_attr.is_static
+        attribute.inherit_from = parent_attr.inherit_from
+
+        self.attributes[access_modifier].append(attribute)
+
+
+
+
+    def get_attribute(self,name):
+        for key,value in self.attributes.items():
+            for y in value:
+                if y.name == name:
+                    return y,key
+        raise BaseClsException("Attribute " + name + " was not found in class " + self.name)
+
+
+
 
 
 '''parse the type of inheritance, default is public'''
@@ -304,6 +353,17 @@ def __parse_method(cls, line, inheritance_type):
 
 def __parse_attr(cls, line, inheritance_type):
     if line:
+        line = line.strip()
+        inheritance_class_id = None
+        #check for using specification
+        if line.startswith("using "):
+            line = line.replace("using ","")
+
+            inheritance_class_id = re.findall("(.+)::.*",line)[0]
+            line = line.replace(inheritance_class_id + "::","")
+            cls.add_attr(Attr(line,inheritance_class_id=inheritance_class_id),inheritance_type)
+            return
+
         type, name = line.rsplit(" ", 1)
 
         if "static " in type:
@@ -315,7 +375,7 @@ def __parse_attr(cls, line, inheritance_type):
         type = type.strip()
         name = name.strip()
 
-        cls.add_attr(Attr(type, name, is_static), inheritance_type)
+        cls.add_attr(Attr(type=type, name=name,is_static=is_static), inheritance_type)
 
 
 def __is_method(line):

@@ -25,6 +25,10 @@ def create_class_tree(classes):
             parent_class.add_child((i[0],cls))
             cls.add_parent((i[0],parent_class))
 
+    for cls in classes:
+        cls.solve_all_using_statements()
+    # map(lambda x: x.send_members_to_children(),get_no_parent_classes(classes)) TODO zjisti, proc to nefunguje...
+
     for cls in get_no_parent_classes(classes):
         cls.send_members_to_children()
 
