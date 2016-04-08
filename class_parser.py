@@ -117,7 +117,7 @@ class Cls:
 
         if self.is_defined:
 
-            for type,str_repr in ((x, InheritanceType.getStringForType(x)) for x in InheritanceType.getTypes()):
+            for type, str_repr in ((x, InheritanceType.getStringForType(x)) for x in InheritanceType.getTypes()):
 
                 inner_elem = etree.Element(str_repr)
                 elem.append(inner_elem)
@@ -132,13 +132,46 @@ class Cls:
                             a.attrib["name"] = attr.name
                             a.attrib["type"] = attr.type
                             a.attrib["scope"] = "class" if attr.is_static else "instance"
+                            if i[1] == "methods":
+                                if attr.is_virtual:
+                                    virtual_elem = etree.Element("virtual",{"pure":"yes" if attr.is_pure_virtual else "no"})
+                                    a.append(virtual_elem)
                             tmp.append(a)
 
-            attrs,methods = self.get_inherited_members()
+        # attrs, methods = self.get_inherited_members()
 
         txt = etree.tostring(elem, pretty_print=True, xml_declaration=True, encoding='UTF-8')
         print(txt)
 
+    '''send attributes and methods to children (visibility according to the inheritance type)'''
+
+    def send_members_to_children(self):
+        if self.children and self.is_defined:
+            public_methods = self.methods[InheritanceType.public]
+            protected_methods = self.methods[InheritanceType.protected]
+
+            public_attrs = self.attributes[InheritanceType.public]
+            protected_attrs = self.attributes[InheritanceType.protected]
+
+            for child in self.children:
+                if child[0] == InheritanceType.private:
+                    child[1].attributes[InheritanceType.private] += public_attrs + protected_attrs
+                    child[1].methods[InheritanceType.private] += public_methods + protected_methods
+                elif child[0] == InheritanceType.protected:
+                    child[1].attributes[InheritanceType.protected] += public_attrs + protected_attrs
+                    child[1].methods[InheritanceType.protected] += public_methods + protected_methods
+                elif child[0] == InheritanceType.public:
+                    child[1].attributes[InheritanceType.public] += public_attrs
+                    child[1].attributes[InheritanceType.protected] += protected_attrs
+                    child[1].methods[InheritanceType.public] += public_methods
+                    child[1].methods[InheritanceType.protected] += protected_methods
+                else:
+                    raise BaseClsException("Unknow inheritance type")
+        if self.children:
+            for child in [x[1] for x  in self.children]:
+                child.send_members_to_children()
+
+    '''TODO: delete this'''
     def get_inherited_members(self):
         attrs = []
         methods = []
@@ -175,9 +208,7 @@ class Cls:
                     attrs += x
                     methods += y
 
-        return attrs,methods
-
-
+        return attrs, methods
 
 
 '''parse the type of inheritance, default is public'''
@@ -271,7 +302,7 @@ def __parse_attr(cls, line, inheritance_type):
         type, name = line.rsplit(" ", 1)
 
         if "static " in type:
-            type = type.replace("static ","")
+            type = type.replace("static ", "")
             is_static = True
         else:
             is_static = False
@@ -279,7 +310,7 @@ def __parse_attr(cls, line, inheritance_type):
         type = type.strip()
         name = name.strip()
 
-        cls.add_attr(Attr(type, name,is_static), inheritance_type)
+        cls.add_attr(Attr(type, name, is_static), inheritance_type)
 
 
 def __is_method(line):
