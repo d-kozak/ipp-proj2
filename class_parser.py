@@ -1,7 +1,7 @@
 import re
 import sys
 import xml.dom.minidom as minidom
-
+from copy import copy,deepcopy
 from lxml import etree
 
 from globals import InheritanceType
@@ -160,12 +160,12 @@ class Cls:
 
     def send_members_to_children(self):
         if self.children and self.is_defined:
-            public_methods = self.methods[InheritanceType.public]
-            protected_methods = self.methods[InheritanceType.protected]
-            private_pure_virtual_methods = [x for x in self.methods[InheritanceType.private] if x.is_pure_virtual]
+            public_methods = deepcopy(self.methods[InheritanceType.public])
+            protected_methods = deepcopy(self.methods[InheritanceType.protected])
+            private_pure_virtual_methods = deepcopy([x for x in self.methods[InheritanceType.private] if x.is_pure_virtual])
 
-            public_attrs = self.attributes[InheritanceType.public]
-            protected_attrs = self.attributes[InheritanceType.protected]
+            public_attrs = deepcopy(self.attributes[InheritanceType.public])
+            protected_attrs = deepcopy(self.attributes[InheritanceType.protected])
 
             for x in public_methods + protected_methods + private_pure_virtual_methods + public_attrs + protected_attrs:
                 if not x.inherit_from:
