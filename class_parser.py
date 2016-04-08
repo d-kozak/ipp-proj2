@@ -129,11 +129,14 @@ class Cls:
             for type, str_repr in ((x, InheritanceType.getStringForType(x)) for x in InheritanceType.getTypes()):
 
                 inner_elem = etree.Element(str_repr)
-                elem.append(inner_elem)
+                not_empty = False
 
                 for i in (self.attributes, "attributes"), (self.methods, "methods"):
 
                     if i[0][type]:
+                        if not not_empty:
+                            not_empty = True
+
                         tmp = etree.Element(i[1])
                         inner_elem.append(tmp)
                         for attr in i[0][type]:
@@ -148,6 +151,9 @@ class Cls:
                                     virtual_elem = etree.Element("virtual",{"pure":"yes" if attr.is_pure_virtual else "no"})
                                     a.append(virtual_elem)
                             tmp.append(a)
+
+                if not_empty:
+                    elem.append(inner_elem)
 
         # attrs, methods = self.get_inherited_members()
 
