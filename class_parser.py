@@ -520,9 +520,8 @@ def pretty_print_xml(string,indent_size,output=sys.stdout):
 
     # now make arguments tag open close
     tmp = re.sub("<arguments/>", "<arguments></arguments>", tmp)
-
-    #print("<?xml version=\"1.0\" encoding=\"utf-8\"?>",file=output)
-    # TODO FIX the header
+    tmp = tmp.replace("<?xml version=\"1.0\" ?>\n","")
+    print("<?xml version=\"1.0\" encoding=\"UTF-8\"?>",file=output)
     print(tmp,file=output)
 
 
