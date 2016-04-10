@@ -54,10 +54,10 @@
 # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 TASK=cls
-INTERPRETER="php -d open_basedir=\"\""
-EXTENSION=php
-#INTERPRETER=python3
-#EXTENSION=py
+#INTERPRETER="php -d open_basedir=\"\""
+#EXTENSION=php
+INTERPRETER=python3
+EXTENSION=py
 
 # cesty ke vstupním a výstupním souborům
 LOCAL_IN_PATH="./" # (simple relative path)

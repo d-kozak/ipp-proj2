@@ -25,22 +25,32 @@ def create_class_tree(classes):
             parent_class.add_child((i[0],cls))
             cls.add_parent((i[0],parent_class))
 
-    for cls in classes:
-        cls.solve_all_using_statements()
     # map(lambda x: x.send_members_to_children(),get_no_parent_classes(classes)) TODO zjisti, proc to nefunguje...
 
     for cls in get_no_parent_classes(classes):
         cls.send_members_to_children()
 
+    for cls in classes:
+        cls.solve_all_using_statements()
+
     return  classes
+
+def check_conflicts(classes):
+    try:
+        for cls in classes:
+            cls.check_conflicts()
+    except BaseClsException as e:
+        sys.stderr.write(e.__str__())
+        sys.exit(21)
 
 def main():
     args = Args(sys.argv[1:])
 
     classes = parse_classes_from_file(args)
     create_class_tree(classes)
+    check_conflicts(classes)
 
-    #pprint(classes)
+    # pprint(classes)
 
     if args.details != Args.NOT_SPECIFIED:
         #true means all

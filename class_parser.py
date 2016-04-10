@@ -3,6 +3,7 @@ import sys
 import xml.dom.minidom as minidom
 from copy import copy, deepcopy
 from lxml import etree
+from pprint import pprint
 
 from globals import InheritanceType
 from exceptions import BaseClsException
@@ -18,6 +19,7 @@ class Method:
         self.params = None
 
         self.inherit_from = None
+        self.inheritance_class_id = None
 
 
 class Attr:
@@ -254,7 +256,13 @@ class Cls:
         attribute.is_static = parent_attr.is_static
         attribute.inherit_from = parent_attr.inherit_from
 
+        # now remove all other mambers with the same name
+        for x in InheritanceType.getTypes():
+            self.attributes[x] = list(filter(lambda x: attribute.name != x.name, self.attributes[x]))
+            self.methods[x] = list(filter(lambda x: attribute.name != x.name, self.methods[x]))
+
         self.attributes[access_modifier].append(attribute)
+
 
     def get_attribute(self, name):
         for key, value in self.attributes.items():
@@ -262,6 +270,21 @@ class Cls:
                 if y.name == name:
                     return y, key
         raise BaseClsException("Attribute " + name + " was not found in class " + self.name)
+
+    def check_conflicts(self):
+        for x in InheritanceType.getTypes():
+            for y in self.attributes[x] + self.methods[x]:
+                others = self.get_members_with_name(y.name)
+                if len(others) != 1:
+                    raise BaseClsException("Inheritance conflict with member " + y.name)
+
+    def get_members_with_name(self, name):
+        res = []
+        for x in InheritanceType.getTypes():
+            for y in self.attributes[x] + self.methods[x]:
+                    if y.name == name:
+                        res.append(y)
+        return res
 
 
 '''parse the type of inheritance, default is public'''
