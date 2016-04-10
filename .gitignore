@@ -1,2 +1,4 @@
 /__pycache__/*
 /CLS-doc.pdf
+*.zip
+/.gitignore
