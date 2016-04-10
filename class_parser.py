@@ -1,7 +1,7 @@
 import re
 import sys
 import xml.dom.minidom as minidom
-from copy import copy,deepcopy
+from copy import copy, deepcopy
 from lxml import etree
 
 from globals import InheritanceType
@@ -21,15 +21,16 @@ class Method:
 
 
 class Attr:
-    def __init__(self, name, is_static=None,type=None,inheritance_class_id=None):
+    def __init__(self, name, is_static=None, type=None, inheritance_class_id=None):
         self.type = type
         self.name = name
         self.is_static = is_static
 
-		# class specified in "using" statement
+        # class specified in "using" statement
         self.inheritance_class_id = inheritance_class_id
 
         self.inherit_from = None
+
 
 class Cls:
     CONCRETE_CLASS = "concrete"
@@ -112,10 +113,9 @@ class Cls:
 
         return prepare_xml_from_elem_tree(root)
 
-    def show_details(self,root = None):
+    def show_details(self, root=None):
         if self.__contains_pure_virtual_methods():
             self.kind = Cls.ABSTRACT
-
 
         elem = self.__prepare_class_header()
         if self.inherit:
@@ -147,11 +147,14 @@ class Cls:
                             a.attrib["name"] = attr.name
                             a.attrib["type"] = attr.type
                             a.attrib["scope"] = "class" if attr.is_static else "instance"
-                            if attr.inherit_from:
-                                a.append(etree.Element("from",{"name":attr.inherit_from}))
+                            if attr.inheritance_class_id:
+                                a.append(etree.Element("from", {"name": attr.inheritance_class_id}))
+                            elif attr.inherit_from:
+                                a.append(etree.Element("from", {"name": attr.inherit_from}))
                             if i[1] == "methods":
                                 if attr.is_virtual:
-                                    virtual_elem = etree.Element("virtual",{"pure":"yes" if attr.is_pure_virtual else "no"})
+                                    virtual_elem = etree.Element("virtual",
+                                                                 {"pure": "yes" if attr.is_pure_virtual else "no"})
                                     a.append(virtual_elem)
 
                                 arguments = etree.Element("arguments")
@@ -169,7 +172,7 @@ class Cls:
         # attrs, methods = self.get_inherited_members()
 
         if root == None:
-            return prepare_xml_from_elem_tree(elem,True)
+            return prepare_xml_from_elem_tree(elem, True)
         else:
             root.append(elem)
 
@@ -179,7 +182,8 @@ class Cls:
         if self.children and self.is_defined:
             public_methods = deepcopy(self.methods[InheritanceType.public])
             protected_methods = deepcopy(self.methods[InheritanceType.protected])
-            private_pure_virtual_methods = deepcopy([x for x in self.methods[InheritanceType.private] if x.is_pure_virtual])
+            private_pure_virtual_methods = deepcopy(
+                [x for x in self.methods[InheritanceType.private] if x.is_pure_virtual])
 
             public_attrs = deepcopy(self.attributes[InheritanceType.public])
             protected_attrs = deepcopy(self.attributes[InheritanceType.protected])
@@ -203,10 +207,10 @@ class Cls:
                 else:
                     raise BaseClsException("Unknown inheritance type")
 
-                #now add the pure virtual methods
+                # now add the pure virtual methods
                 child[1].methods[InheritanceType.private] += private_pure_virtual_methods
         if self.children:
-            for child in [x[1] for x  in self.children]:
+            for child in [x[1] for x in self.children]:
                 child.send_members_to_children()
 
     def __contains_pure_virtual_methods(self):
@@ -239,10 +243,11 @@ class Cls:
         if not cls:
             raise BaseClsException("Given parent class " + attribute.inheritance_class_id + " was not found")
 
-        parent_attr,access_modifier = cls.get_attribute(attribute.name)
+        parent_attr, access_modifier = cls.get_attribute(attribute.name)
 
         # remove the old reference from list, default location is private
-        self.attributes[InheritanceType.private] = list(filter(lambda x: attribute.name != x.name ,self.attributes[InheritanceType.private]))
+        self.attributes[InheritanceType.private] = list(
+            filter(lambda x: attribute.name != x.name, self.attributes[InheritanceType.private]))
 
         # now copy all useful info into subclass parameter
         attribute.type = parent_attr.type
@@ -251,18 +256,12 @@ class Cls:
 
         self.attributes[access_modifier].append(attribute)
 
-
-
-
-    def get_attribute(self,name):
-        for key,value in self.attributes.items():
+    def get_attribute(self, name):
+        for key, value in self.attributes.items():
             for y in value:
                 if y.name == name:
-                    return y,key
+                    return y, key
         raise BaseClsException("Attribute " + name + " was not found in class " + self.name)
-
-
-
 
 
 '''parse the type of inheritance, default is public'''
@@ -355,13 +354,13 @@ def __parse_attr(cls, line, inheritance_type):
     if line:
         line = line.strip()
         inheritance_class_id = None
-        #check for using specification
+        # check for using specification
         if line.startswith("using "):
-            line = line.replace("using ","")
+            line = line.replace("using ", "")
 
-            inheritance_class_id = re.findall("(.+)::.*",line)[0]
-            line = line.replace(inheritance_class_id + "::","")
-            cls.add_attr(Attr(line,inheritance_class_id=inheritance_class_id),inheritance_type)
+            inheritance_class_id = re.findall("(.+)::.*", line)[0]
+            line = line.replace(inheritance_class_id + "::", "")
+            cls.add_attr(Attr(line, inheritance_class_id=inheritance_class_id), inheritance_type)
             return
 
         type, name = line.rsplit(" ", 1)
@@ -375,7 +374,7 @@ def __parse_attr(cls, line, inheritance_type):
         type = type.strip()
         name = name.strip()
 
-        cls.add_attr(Attr(type=type, name=name,is_static=is_static), inheritance_type)
+        cls.add_attr(Attr(type=type, name=name, is_static=is_static), inheritance_type)
 
 
 def __is_method(line):
@@ -447,23 +446,26 @@ def get_no_parent_classes(classes):
             ret_val.append(cls)
     return ret_val
 
+
 def __make_classs_tag_openclose(string):
     string = string.group(0)
     indent = string.index("<class")
-    return string.replace("/>",">") + "\n" + indent * "\t" + "</class>"
+    return string.replace("/>", ">") + "\n" + indent * "\t" + "</class>"
+
 
 def pretty_print_xml(string):
     data = minidom.parseString(string).toprettyxml()
-    tmp = re.sub(".*<class(.+?)/>", lambda  m: __make_classs_tag_openclose(m), data)
+    tmp = re.sub(".*<class(.+?)/>", lambda m: __make_classs_tag_openclose(m), data)
 
-    #now make arguments tag open close
-    tmp = re.sub("<arguments/>","<arguments></arguments>",tmp)
+    # now make arguments tag open close
+    tmp = re.sub("<arguments/>", "<arguments></arguments>", tmp)
 
     print(tmp)
 
-def prepare_xml_from_elem_tree(root_elem,return_string=False):
+
+def prepare_xml_from_elem_tree(root_elem, return_string=False):
     data = etree.tostring(root_elem, xml_declaration=True, encoding="UTF-8")
     if return_string:
-        return  data
+        return data
     else:
         pretty_print_xml(data)
