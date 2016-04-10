@@ -65,7 +65,7 @@ def main():
         #otherwise it contains class name
         else:
             try:
-                pretty_print_xml(find_class_by_name(classes,args.details).show_details(indent_size=args.getPrettyXml(), root=None))
+                pretty_print_xml(find_class_by_name(classes,args.details).show_details(root=None,indent_size=4),indent_size=4)
             except BaseClsException:
                 # if the class does not exists, print just the header
                 args.getOutput().write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
