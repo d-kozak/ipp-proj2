@@ -421,6 +421,11 @@ def __parse_attr(cls, line, inheritance_type):
 
         type, name = line.rsplit(" ", 1)
 
+        for symbol in ("*","&"):
+            while symbol in name:
+                type = type + symbol
+                name = name.replace(symbol," ")
+
         if "static " in type:
             type = type.replace("static ", "")
             is_static = True
