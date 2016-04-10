@@ -286,7 +286,10 @@ class Cls:
             for y in self.attributes[x] + self.methods[x]:
                 others = self.get_members_with_name(y.name)
                 if len(others) != 1:
-                    raise BaseClsException("Inheritance conflict with member " + y.name)
+                    methods = list(filter(lambda x: isinstance(x,Method),others))
+                    for method in methods:
+                        if not method.is_virtual:
+                            raise BaseClsException("Inheritance conflict with member " + y.name)
 
     def get_members_with_name(self, name):
         res = []
@@ -301,14 +304,16 @@ class Cls:
             for y in self.methods[access_modifier]:
                 if y.is_pure_virtual:
                     members_with_same_name = self.get_members_with_name(y.name)
-                    if len(members_with_same_name) != 1:
-                        methods_with_same_name = list(filter(lambda x: isinstance(x,Method),members_with_same_name))
+                    methods_with_same_name = list(filter(lambda x: isinstance(x, Method), members_with_same_name))
+                    if len(methods_with_same_name) >= 2:
+
+                        # get rid of those inherited pure virtual methods
                         for method in methods_with_same_name:
                             if not method.is_pure_virtual and method.type == y.type:
                                 # if the method is virtual, but not pure virtual and has the same return type, than we found implementation of pure virtual method, so the class may no longer be abstract
                                 self.__remove_pure_virtual_method(method.name,access_modifier)
                                 self.check_abstract_x_concrete()
-                                break
+
 
     def __remove_pure_virtual_method(self,name,access_modifier):
         self.methods[access_modifier] = list(filter(lambda x : x.name != name and x.is_pure_virtual,self.methods[access_modifier]))
@@ -511,11 +516,13 @@ def pretty_print_xml(string,indent_size,output=sys.stdout):
     # now make arguments tag open close
     tmp = re.sub("<arguments/>", "<arguments></arguments>", tmp)
 
+    #print("<?xml version=\"1.0\" encoding=\"utf-8\"?>",file=output)
+    # TODO FIX the header
     print(tmp,file=output)
 
 
 def prepare_xml_from_elem_tree(root_elem,indent_size,return_string=False,output=None):
-    data = etree.tostring(root_elem, xml_declaration=True, encoding="UTF-8")
+    data = etree.tostring(root_elem)
     if return_string:
         return data
     else:

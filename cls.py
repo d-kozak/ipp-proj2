@@ -47,8 +47,12 @@ def check_conflicts(classes):
         sys.exit(21)
 
 def check_pure_virtual_methods(classes):
-    for cls in classes:
-        cls.check_pure_virtual_methods()
+    try:
+        for cls in classes:
+            cls.check_pure_virtual_methods()
+    except BaseClsException as e:
+        sys.stderr.write(e.__str__())
+        sys.exit(21)
 
 def main():
     args = Args(sys.argv[1:])
