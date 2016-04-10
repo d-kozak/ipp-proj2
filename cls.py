@@ -11,12 +11,12 @@ from class_parser import parse_classes_from_file,find_class_by_name,get_no_paren
 
 from lxml import etree
 
-def print_basic_info(classes,indent_size):
+def print_basic_info(classes,indent_size,output):
     root = etree.Element("model")
     for cls in get_no_parent_classes(classes):
         cls.to_xml_basic(root,indent_size)
 
-    prepare_xml_from_elem_tree(root,indent_size)
+    prepare_xml_from_elem_tree(root,indent_size,output=output)
 
 
 
@@ -60,18 +60,18 @@ def main():
         root = etree.Element("model")
         if args.details == Args.ALL:
             for cls in classes:
-                cls.show_details(root,args.getPrettyXml())
-            prepare_xml_from_elem_tree(root,args.getPrettyXml())
+                cls.show_details(root,args.getPrettyXml(),output=args.getOutput())
+            prepare_xml_from_elem_tree(root,args.getPrettyXml(),output=args.getOutput())
         #otherwise it contains class name
         else:
             try:
-                pretty_print_xml(find_class_by_name(classes,args.details).show_details(root=None,indent_size=4),indent_size=4)
+                pretty_print_xml(find_class_by_name(classes,args.details).show_details(root=None,indent_size=4,output=args.getOutput()),indent_size=4,output=args.getOutput())
             except BaseClsException:
                 # if the class does not exists, print just the header
                 args.getOutput().write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
 
     else:
-        print_basic_info(classes,args.getPrettyXml())
+        print_basic_info(classes,args.getPrettyXml(),output=args.getOutput())
 
 if __name__ == "__main__":
     main()

@@ -109,16 +109,16 @@ class Cls:
         elem.attrib["kind"] = self.kind
         return elem
 
-    def to_xml_basic(self, root,indent_size=4):
+    def to_xml_basic(self, root,output,indent_size=4):
         elem = self.__prepare_class_header()
         root.append(elem)
 
         for child in (x[1] for x in self.children):
-            child.to_xml_basic(elem,indent_size)
+            child.to_xml_basic(elem,output,indent_size)
 
-        return prepare_xml_from_elem_tree(root,indent_size,True)
+        return prepare_xml_from_elem_tree(root,indent_size,True,output=output)
 
-    def show_details(self,root=None,indent_size=4):
+    def show_details(self,output=None,root=None,indent_size=4):
 
         elem = self.__prepare_class_header()
         if self.inherit:
@@ -175,7 +175,7 @@ class Cls:
         # attrs, methods = self.get_inherited_members()
 
         if root == None:
-            return prepare_xml_from_elem_tree(elem,indent_size,True)
+            return prepare_xml_from_elem_tree(elem,indent_size,True,output=output)
         else:
             root.append(elem)
 
@@ -481,19 +481,19 @@ def __make_classs_tag_openclose(string):
     return string.replace("/>", ">") + "\n" + indent * "\t" + "</class>"
 
 
-def pretty_print_xml(string,indent_size):
+def pretty_print_xml(string,indent_size,output=sys.stdout):
     data = minidom.parseString(string).toprettyxml(indent=indent_size * " ")
     tmp = data #re.sub(".*<class(.+?)/>", lambda m: __make_classs_tag_openclose(m), data)
 
     # now make arguments tag open close
     tmp = re.sub("<arguments/>", "<arguments></arguments>", tmp)
 
-    print(tmp)
+    print(tmp,file=output)
 
 
-def prepare_xml_from_elem_tree(root_elem,indent_size,return_string=False):
+def prepare_xml_from_elem_tree(root_elem,indent_size,return_string=False,output=None):
     data = etree.tostring(root_elem, xml_declaration=True, encoding="UTF-8")
     if return_string:
         return data
     else:
-        pretty_print_xml(data,indent_size)
+        pretty_print_xml(data,indent_size,output=output)
