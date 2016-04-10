@@ -116,7 +116,7 @@ class Cls:
         for child in (x[1] for x in self.children):
             child.to_xml_basic(elem,indent_size)
 
-        return prepare_xml_from_elem_tree(root,indent_size)
+        return prepare_xml_from_elem_tree(root,indent_size,True)
 
     def show_details(self,root=None,indent_size=4):
         if self.__contains_pure_virtual_methods():
@@ -481,7 +481,7 @@ def __make_classs_tag_openclose(string):
 
 def pretty_print_xml(string,indent_size):
     data = minidom.parseString(string).toprettyxml(indent=indent_size * " ")
-    tmp = re.sub(".*<class(.+?)/>", lambda m: __make_classs_tag_openclose(m), data)
+    tmp = data #re.sub(".*<class(.+?)/>", lambda m: __make_classs_tag_openclose(m), data)
 
     # now make arguments tag open close
     tmp = re.sub("<arguments/>", "<arguments></arguments>", tmp)
