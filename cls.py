@@ -46,11 +46,16 @@ def check_conflicts(classes):
         sys.stderr.write(e.__str__())
         sys.exit(21)
 
+def check_pure_virtual_methods(classes):
+    for cls in classes:
+        cls.check_pure_virtual_methods()
+
 def main():
     args = Args(sys.argv[1:])
 
     classes = parse_classes_from_file(args)
     create_class_tree(classes)
+    check_pure_virtual_methods(classes)
     check_conflicts(classes)
 
     # pprint(classes)
@@ -60,7 +65,7 @@ def main():
         root = etree.Element("model")
         if args.details == Args.ALL:
             for cls in classes:
-                cls.show_details(root,args.getPrettyXml(),output=args.getOutput())
+                cls.show_details(root=root,indent_size=args.getPrettyXml(),output=args.getOutput())
             prepare_xml_from_elem_tree(root,args.getPrettyXml(),output=args.getOutput())
         #otherwise it contains class name
         else:

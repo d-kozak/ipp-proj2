@@ -217,8 +217,13 @@ class Cls:
                 child.send_members_to_children()
 
         #make class abstract if it contains anything pure virtual
+        self.check_abstract_x_concrete()
+
+    def check_abstract_x_concrete(self):
         if self.__contains_pure_virtual_methods():
             self.kind = Cls.ABSTRACT
+        else:
+            self.kind = Cls.CONCRETE_CLASS
 
     def __contains_pure_virtual_methods(self):
         if self.methods:
@@ -290,6 +295,24 @@ class Cls:
                     if y.name == name:
                         res.append(y)
         return res
+
+    def check_pure_virtual_methods(self):
+        for access_modifier in InheritanceType.getTypes():
+            for y in self.methods[access_modifier]:
+                if y.is_pure_virtual:
+                    members_with_same_name = self.get_members_with_name(y.name)
+                    if len(members_with_same_name) != 1:
+                        methods_with_same_name = list(filter(lambda x: isinstance(x,Method),members_with_same_name))
+                        for method in methods_with_same_name:
+                            if not method.is_pure_virtual and method.type == y.type:
+                                # if the method is virtual, but not pure virtual and has the same return type, than we found implementation of pure virtual method, so the class may no longer be abstract
+                                self.__remove_pure_virtual_method(method.name,access_modifier)
+                                self.check_abstract_x_concrete()
+                                break
+
+    def __remove_pure_virtual_method(self,name,access_modifier):
+        self.methods[access_modifier] = list(filter(lambda x : x.name != name and x.is_pure_virtual,self.methods[access_modifier]))
+
 
 
 '''parse the type of inheritance, default is public'''
