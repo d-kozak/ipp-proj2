@@ -106,16 +106,16 @@ class Cls:
         elem.attrib["kind"] = self.kind
         return elem
 
-    def to_xml_basic(self, root):
+    def to_xml_basic(self, root,indent_size=4):
         elem = self.__prepare_class_header()
         root.append(elem)
 
         for child in (x[1] for x in self.children):
-            child.to_xml_basic(elem)
+            child.to_xml_basic(elem,indent_size)
 
-        return prepare_xml_from_elem_tree(root)
+        return prepare_xml_from_elem_tree(root,indent_size)
 
-    def show_details(self, root=None):
+    def show_details(self,root=None,indent_size=4):
         if self.__contains_pure_virtual_methods():
             self.kind = Cls.ABSTRACT
 
@@ -174,7 +174,7 @@ class Cls:
         # attrs, methods = self.get_inherited_members()
 
         if root == None:
-            return prepare_xml_from_elem_tree(elem, True)
+            return prepare_xml_from_elem_tree(elem,indent_size,True)
         else:
             root.append(elem)
 
@@ -476,8 +476,8 @@ def __make_classs_tag_openclose(string):
     return string.replace("/>", ">") + "\n" + indent * "\t" + "</class>"
 
 
-def pretty_print_xml(string):
-    data = minidom.parseString(string).toprettyxml()
+def pretty_print_xml(string,indent_size):
+    data = minidom.parseString(string).toprettyxml(indent=indent_size * " ")
     tmp = re.sub(".*<class(.+?)/>", lambda m: __make_classs_tag_openclose(m), data)
 
     # now make arguments tag open close
@@ -486,9 +486,9 @@ def pretty_print_xml(string):
     print(tmp)
 
 
-def prepare_xml_from_elem_tree(root_elem, return_string=False):
+def prepare_xml_from_elem_tree(root_elem,indent_size,return_string=False):
     data = etree.tostring(root_elem, xml_declaration=True, encoding="UTF-8")
     if return_string:
         return data
     else:
-        pretty_print_xml(data)
+        pretty_print_xml(data,indent_size)

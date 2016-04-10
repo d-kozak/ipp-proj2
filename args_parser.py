@@ -25,7 +25,7 @@ class Args:
         parser.add_argument('--help1',action=PrintHelp,help="Prints help")
         parser.add_argument("--input",type=argparse.FileType("r"),default=sys.stdin)
         parser.add_argument("--output",type=argparse.FileType("w"),default=sys.stdout)
-        parser.add_argument("--pretty-xml", nargs="?", const=4, default=Args.NOT_SPECIFIED)
+        parser.add_argument("--pretty-xml", nargs="?", const=4, default=4)
         parser.add_argument("--details", nargs="?", const=Args.ALL, default=Args.NOT_SPECIFIED)
         parser.add_argument("--search", nargs="?", const="%IDK", default=Args.NOT_SPECIFIED)
         parser.add_argument("--conflicts", nargs="?", const="%IDK", default=Args.NOT_SPECIFIED)
