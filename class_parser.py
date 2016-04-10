@@ -119,8 +119,6 @@ class Cls:
         return prepare_xml_from_elem_tree(root,indent_size,True)
 
     def show_details(self,root=None,indent_size=4):
-        if self.__contains_pure_virtual_methods():
-            self.kind = Cls.ABSTRACT
 
         elem = self.__prepare_class_header()
         if self.inherit:
@@ -132,47 +130,47 @@ class Cls:
                 inherit_elem.append(cls_elem)
             elem.append(inherit_elem)
 
-        if self.is_defined:
 
-            for type, str_repr in ((x, InheritanceType.getStringForType(x)) for x in InheritanceType.getTypes()):
 
-                inner_elem = etree.Element(str_repr)
-                not_empty = False
+        for type, str_repr in ((x, InheritanceType.getStringForType(x)) for x in InheritanceType.getTypes()):
 
-                for i in (self.attributes, "attributes"), (self.methods, "methods"):
+            inner_elem = etree.Element(str_repr)
+            not_empty = False
 
-                    if i[0][type]:
-                        if not not_empty:
-                            not_empty = True
+            for i in (self.attributes, "attributes"), (self.methods, "methods"):
 
-                        tmp = etree.Element(i[1])
-                        inner_elem.append(tmp)
-                        for attr in i[0][type]:
-                            a = etree.Element(i[1][:-1])
-                            a.attrib["name"] = attr.name
-                            a.attrib["type"] = attr.type
-                            a.attrib["scope"] = "class" if attr.is_static else "instance"
-                            if attr.inheritance_class_id:
-                                a.append(etree.Element("from", {"name": attr.inheritance_class_id}))
-                            elif attr.inherit_from:
-                                a.append(etree.Element("from", {"name": attr.inherit_from}))
-                            if i[1] == "methods":
-                                if attr.is_virtual:
-                                    virtual_elem = etree.Element("virtual",
-                                                                 {"pure": "yes" if attr.is_pure_virtual else "no"})
-                                    a.append(virtual_elem)
+                if i[0][type]:
+                    if not not_empty:
+                        not_empty = True
 
-                                arguments = etree.Element("arguments")
-                                if attr.params:
-                                    for param in attr.params:
-                                        param_element = etree.Element("argument", {"name": param[1], "type": param[0]})
-                                        arguments.append(param_element)
-                                a.append(arguments)
+                    tmp = etree.Element(i[1])
+                    inner_elem.append(tmp)
+                    for attr in i[0][type]:
+                        a = etree.Element(i[1][:-1])
+                        a.attrib["name"] = attr.name
+                        a.attrib["type"] = attr.type
+                        a.attrib["scope"] = "class" if attr.is_static else "instance"
+                        if attr.inheritance_class_id:
+                            a.append(etree.Element("from", {"name": attr.inheritance_class_id}))
+                        elif attr.inherit_from:
+                            a.append(etree.Element("from", {"name": attr.inherit_from}))
+                        if i[1] == "methods":
+                            if attr.is_virtual:
+                                virtual_elem = etree.Element("virtual",
+                                                             {"pure": "yes" if attr.is_pure_virtual else "no"})
+                                a.append(virtual_elem)
 
-                            tmp.append(a)
+                            arguments = etree.Element("arguments")
+                            if attr.params:
+                                for param in attr.params:
+                                    param_element = etree.Element("argument", {"name": param[1], "type": param[0]})
+                                    arguments.append(param_element)
+                            a.append(arguments)
 
-                if not_empty:
-                    elem.append(inner_elem)
+                        tmp.append(a)
+
+            if not_empty:
+                elem.append(inner_elem)
 
         # attrs, methods = self.get_inherited_members()
 
@@ -184,7 +182,7 @@ class Cls:
     '''send attributes and methods to children (visibility according to the inheritance type)'''
 
     def send_members_to_children(self):
-        if self.children and self.is_defined:
+        if self.children:
             public_methods = deepcopy(self.methods[InheritanceType.public])
             protected_methods = deepcopy(self.methods[InheritanceType.protected])
             private_pure_virtual_methods = deepcopy(
@@ -217,6 +215,10 @@ class Cls:
         if self.children:
             for child in [x[1] for x in self.children]:
                 child.send_members_to_children()
+
+        #make class abstract if it contains anything pure virtual
+        if self.__contains_pure_virtual_methods():
+            self.kind = Cls.ABSTRACT
 
     def __contains_pure_virtual_methods(self):
         if self.methods:
