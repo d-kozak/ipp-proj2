@@ -1,3 +1,6 @@
+
+
+#CLS:xkozak15
 import sys
 from enum import Enum
 from exceptions import BaseClsException
