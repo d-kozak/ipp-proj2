@@ -2,3 +2,4 @@
 /CLS-doc.pdf
 *.zip
 /.gitignore
+*.~lock.CLS-doc.odt#
